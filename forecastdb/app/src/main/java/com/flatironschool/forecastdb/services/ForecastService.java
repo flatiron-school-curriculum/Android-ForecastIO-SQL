@@ -10,8 +10,10 @@ import retrofit.http.Path;
  */
 public class ForecastService {
 
+    //TODO: Register with forecast.io and get an APIKEY
+
     private static final String API_URL = "https://api.forecast.io/";
-    private static final String API_KEY = "3df78e71aa1f367348b85012c19cade4";
+    private static final String API_KEY = ENTER APIKEY HERE;
 
     public interface WeatherService {
         @GET("/forecast/{key}/{latitude},{longitude}")
