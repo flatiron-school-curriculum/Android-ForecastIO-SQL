@@ -12,12 +12,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.flatironschool.forecastdb.Adapters.ForecastAdapter;
 import com.flatironschool.forecastdb.db.ForecastDataSource;
-import com.flatironschool.forecastdb.db.ForecastOpenHelper;
 import com.flatironschool.forecastdb.services.Forecast;
 import com.flatironschool.forecastdb.services.ForecastService;
 import com.google.android.gms.common.ConnectionResult;
@@ -27,10 +25,7 @@ import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
 import java.sql.SQLException;
-import java.util.ArrayList;
 
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -50,36 +45,39 @@ public class WeatherActivity extends ListActivity
     private LocationClient mLocationClient;
     private Location mCurentLocation;
     private LocationRequest mLocationRequest;
-    private static final long UPDATE_INTERVAL = 5000;
-    private static final long FASTEST_INTERAL = 1000;
+    private static final long UPDATE_INTERVAL = 30000;
+    private static final long FASTEST_INTERAL = 10000;
 
-    //LifeCycle 
+    //LifeCycle
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weather);
 
-        mDataSource = new ForecastDataSource(WeatherActivity.this);
-        mLocationClient = new LocationClient(this, this, this);
+        if (servicesConnected()) {
+            mDataSource = new ForecastDataSource(WeatherActivity.this);
+            mLocationClient = new LocationClient(this, this, this);
 
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setInterval(UPDATE_INTERVAL);
-        mLocationRequest.setFastestInterval(FASTEST_INTERAL);
+            mLocationRequest = new LocationRequest();
+            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            mLocationRequest.setInterval(UPDATE_INTERVAL);
+            mLocationRequest.setFastestInterval(FASTEST_INTERAL);
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        mLocationClient.connect();
-//        if (servicesConnected()) {
-//            mCurentLocation = mLocationClient.getLastLocation();
-//        }
+        if (servicesConnected()) {
+            mLocationClient.connect();
+        }
     }
 
     @Override
     protected void onStop() {
-        mLocationClient.disconnect();
+        if (servicesConnected() && mLocationClient != null) {
+            mLocationClient.disconnect();
+        }
         super.onStop();
     }
 
@@ -212,6 +210,11 @@ public class WeatherActivity extends ListActivity
     //Location Listener Callback
     @Override
     public void onLocationChanged(Location location) {
+        if (mCurentLocation == null) {
+            ForecastService service = new ForecastService();
+            service.loadForecastData(String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude()), mCallback);
+        }
+
         mCurentLocation = location;
     }
 
