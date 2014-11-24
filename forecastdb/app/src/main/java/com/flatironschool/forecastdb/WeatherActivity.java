@@ -1,6 +1,8 @@
 package com.flatironschool.forecastdb;
 
 import android.app.ListActivity;
+import android.app.LoaderManager;
+import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
@@ -11,6 +13,7 @@ import android.widget.ArrayAdapter;
 import com.flatironschool.forecastdb.Adapters.ForecastAdapter;
 import com.flatironschool.forecastdb.db.ForecastDataSource;
 import com.flatironschool.forecastdb.db.ForecastOpenHelper;
+import com.flatironschool.forecastdb.loaders.ForecastCursorLoader;
 import com.flatironschool.forecastdb.services.Forecast;
 import com.flatironschool.forecastdb.services.ForecastService;
 
@@ -24,7 +27,7 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 
 
-public class WeatherActivity extends ListActivity {
+public class WeatherActivity extends ListActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private ForecastAdapter mForecastAdapter;
 
@@ -35,7 +38,26 @@ public class WeatherActivity extends ListActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weather);
 
-        mDataSource = new ForecastDataSource(WeatherActivity.this);
+
+//        mDataSource = new ForecastDataSource(WeatherActivity.this);
+        mDataSource = ForecastDataSource.get(this);
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return new ForecastCursorLoader(this);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        ForecastAdapter adapter = new ForecastAdapter(this, data, 0);
+
+        setListAdapter(adapter);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        setListAdapter(null);
     }
 
     protected Callback<Forecast>mCallback = new Callback<Forecast>() {
@@ -47,8 +69,10 @@ public class WeatherActivity extends ListActivity {
             } else {
                 mDataSource.updateTemperature(forecast);
             }
-            Cursor cursor = mDataSource.selectAllTemperatures();
-            updateList(cursor);
+
+            getLoaderManager().initLoader(0, null, WeatherActivity.this);
+//            Cursor cursor = mDataSource.selectAllTemperatures();
+//            updateList(cursor);
         }
 
         @Override
@@ -76,8 +100,9 @@ public class WeatherActivity extends ListActivity {
             ForecastService service = new ForecastService();
             service.loadForecastData("40.711239", " -74.010509", mCallback);
         } else if (id == R.id.delete){
-            mDataSource.deleteAllTemperatures();
-            updateList(mDataSource.selectAllTemperatures());
+            int recordsDeleted  = mDataSource.deleteAllTemperatures();
+            getLoaderManager().initLoader(0, null, this);
+//            updateList(mDataSource.selectAllTemperatures());
         }
         return super.onOptionsItemSelected(item);
     }
@@ -94,10 +119,11 @@ public class WeatherActivity extends ListActivity {
 
         try {
             mDataSource.open();
-            Cursor cursor = mDataSource.selectAllTemperatures();
+            getLoaderManager().initLoader(0, null, this);
+//            Cursor cursor = mDataSource.selectAllTemperatures();
 
-            mForecastAdapter = new ForecastAdapter(this, cursor, 0);
-            setListAdapter(mForecastAdapter);
+//            mForecastAdapter = new ForecastAdapter(this, cursor, 0);
+//            setListAdapter(mForecastAdapter);
 
             //  updateList(cursor);
         } catch (SQLException e) {

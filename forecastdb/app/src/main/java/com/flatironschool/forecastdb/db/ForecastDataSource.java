@@ -17,11 +17,26 @@ public class ForecastDataSource {
     private SQLiteDatabase mDatabase;
     private ForecastOpenHelper mForecastOpenHelper;
     private Context mContext;
+    private static ForecastDataSource sForecastDataSource;
 
-    public ForecastDataSource(Context context){
+    private ForecastDataSource(Context context){
         mContext = context;
         mForecastOpenHelper = new ForecastOpenHelper(mContext);
+        try {
+            open();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
+
+    public static ForecastDataSource get(Context context){
+        if (sForecastDataSource == null) {
+            sForecastDataSource = new ForecastDataSource(context);
+        }
+
+        return sForecastDataSource;
+    }
+
 
     //open Database
     public void open() throws SQLException{
@@ -133,7 +148,7 @@ public class ForecastDataSource {
     //delete
 
     public int deleteAllTemperatures() {
-        return mDatabase.delete(ForecastOpenHelper.TABLE_FORECASTS,null, null);
+        return mDatabase.delete(ForecastOpenHelper.TABLE_FORECASTS,"1", null); //pass 1 as where clause to get count
     }
 
     public int delete(int forecastID){
