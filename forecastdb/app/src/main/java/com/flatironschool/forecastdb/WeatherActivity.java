@@ -1,18 +1,31 @@
 package com.flatironschool.forecastdb;
 
+import android.app.Activity;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.ListActivity;
+import android.content.Intent;
+import android.content.IntentSender;
 import android.database.Cursor;
+import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
+import android.widget.Toast;
 
 import com.flatironschool.forecastdb.Adapters.ForecastAdapter;
 import com.flatironschool.forecastdb.db.ForecastDataSource;
 import com.flatironschool.forecastdb.db.ForecastOpenHelper;
 import com.flatironschool.forecastdb.services.Forecast;
 import com.flatironschool.forecastdb.services.ForecastService;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -24,18 +37,50 @@ import retrofit.RetrofitError;
 import retrofit.client.Response;
 
 
-public class WeatherActivity extends ListActivity {
+public class WeatherActivity extends ListActivity
+        implements GooglePlayServicesClient.ConnectionCallbacks,
+        GooglePlayServicesClient.OnConnectionFailedListener, LocationListener {
+
+    private final static String TAG = "WeatherActivity";
+    private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
+
 
     private ForecastAdapter mForecastAdapter;
-
     protected ForecastDataSource mDataSource;
+    private LocationClient mLocationClient;
+    private Location mCurentLocation;
+    private LocationRequest mLocationRequest;
+    private static final long UPDATE_INTERVAL = 5000;
+    private static final long FASTEST_INTERAL = 1000;
 
+    //LifeCycle 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weather);
 
         mDataSource = new ForecastDataSource(WeatherActivity.this);
+        mLocationClient = new LocationClient(this, this, this);
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERAL);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mLocationClient.connect();
+//        if (servicesConnected()) {
+//            mCurentLocation = mLocationClient.getLastLocation();
+//        }
+    }
+
+    @Override
+    protected void onStop() {
+        mLocationClient.disconnect();
+        super.onStop();
     }
 
     protected Callback<Forecast>mCallback = new Callback<Forecast>() {
@@ -80,6 +125,94 @@ public class WeatherActivity extends ListActivity {
             updateList(mDataSource.selectAllTemperatures());
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode){
+            case CONNECTION_FAILURE_RESOLUTION_REQUEST :
+                switch (resultCode) {
+                    case Activity.RESULT_OK :
+
+                        break;
+                }
+        }
+    }
+
+    public static class ErrorDialogFragment extends DialogFragment {
+        private Dialog mDialog;
+        public ErrorDialogFragment(){
+            super();
+            mDialog = null;
+        }
+        public void setDialog(Dialog dialog){
+            mDialog = dialog;
+        }
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            return mDialog;
+        }
+    }
+
+    private boolean servicesConnected() {
+        int resultCode = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
+
+        if (ConnectionResult.SUCCESS == resultCode) {
+            Log.d(TAG, "Google Play services are available");
+
+            return true;
+        } else {
+
+            Dialog errorDialog = GooglePlayServicesUtil.getErrorDialog(
+                    resultCode,
+                    this,
+                    CONNECTION_FAILURE_RESOLUTION_REQUEST);
+            if (errorDialog != null) {
+                ErrorDialogFragment errorFragment = new ErrorDialogFragment();
+                errorFragment.setDialog(errorDialog);
+                errorFragment.show(getFragmentManager(), "Location Updates");
+            }
+        }
+
+        return false;
+    }
+
+    //Connection Callbacks
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+        if (mLocationClient != null && mLocationRequest != null) {
+            mLocationClient.requestLocationUpdates(mLocationRequest, this);
+        }
+    }
+
+    @Override
+    public void onDisconnected() {
+        Toast.makeText(this, "Disconnected. Please re-connect.",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    //Connection failed callbacks
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        if (connectionResult.hasResolution()){
+            try {
+                connectionResult.startResolutionForResult(this,
+                        CONNECTION_FAILURE_RESOLUTION_REQUEST);
+            } catch (IntentSender.SendIntentException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //show an error dialog
+        }
+    }
+
+    //Location Listener Callback
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurentLocation = location;
     }
 
     @Override
