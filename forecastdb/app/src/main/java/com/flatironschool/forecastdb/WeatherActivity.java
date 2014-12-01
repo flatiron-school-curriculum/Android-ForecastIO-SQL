@@ -60,6 +60,8 @@ public class WeatherActivity extends ListActivity implements LoaderManager.Loade
         setListAdapter(null);
     }
 
+
+
     protected Callback<Forecast>mCallback = new Callback<Forecast>() {
         @Override
         public void success(Forecast forecast, Response response) {
@@ -70,7 +72,8 @@ public class WeatherActivity extends ListActivity implements LoaderManager.Loade
                 mDataSource.updateTemperature(forecast);
             }
 
-            getLoaderManager().initLoader(0, null, WeatherActivity.this);
+            getLoaderManager().restartLoader(0, null, WeatherActivity.this);
+//            getLoaderManager().initLoader(0, null, WeatherActivity.this);
 //            Cursor cursor = mDataSource.selectAllTemperatures();
 //            updateList(cursor);
         }
@@ -101,7 +104,8 @@ public class WeatherActivity extends ListActivity implements LoaderManager.Loade
             service.loadForecastData("40.711239", " -74.010509", mCallback);
         } else if (id == R.id.delete){
             int recordsDeleted  = mDataSource.deleteAllTemperatures();
-            getLoaderManager().initLoader(0, null, this);
+//            getLoaderManager().initLoader(0, null, this);
+            getLoaderManager().restartLoader(0, null, this);
 //            updateList(mDataSource.selectAllTemperatures());
         }
         return super.onOptionsItemSelected(item);

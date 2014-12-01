@@ -26,15 +26,15 @@ public abstract class SQLiteCursorLoader extends AsyncTaskLoader<Cursor>{
     }
 
     @Override
-    public void deliverResult(Cursor cursor) {
+    public void deliverResult(Cursor data) {
         Cursor oldCursor = mCursor;
-        mCursor = cursor;
+        mCursor = data;
 
         if (isStarted()) {
-            super.deliverResult(cursor);
+            super.deliverResult(data);
         }
 
-        if (oldCursor != null && oldCursor != cursor && !oldCursor.isClosed()){
+        if (oldCursor != null && oldCursor != data && !oldCursor.isClosed()){
             oldCursor.close();
         }
     }
@@ -55,9 +55,9 @@ public abstract class SQLiteCursorLoader extends AsyncTaskLoader<Cursor>{
     }
 
     @Override
-    public void onCanceled(Cursor data) {
-        if (data != null && !data.isClosed()) {
-            data.close();
+    public void onCanceled(Cursor cursor) {
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
         }
     }
 
