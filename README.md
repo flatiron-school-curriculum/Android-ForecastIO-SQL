@@ -66,3 +66,5 @@ SQLiteOpenHelper subclass to create table and handle migrations
 
 Root Activity Displays List of temperatures
 
+
+<a href='https://learn.co/lessons/Android-ForecastIO-SQL' data-visibility='hidden'>View this lesson on Learn.co</a>
